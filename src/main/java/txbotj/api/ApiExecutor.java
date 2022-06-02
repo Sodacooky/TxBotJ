@@ -14,7 +14,7 @@ public class ApiExecutor {
         params.put("user_id", Long.toString(user_id));
         params.put("message", content);
         JsonNode result = HttpSender.sendHttpRequest(HttpSender.buildUrl(address, "send_private_msg", params));
-        LoggerFactory.getLogger(ApiExecutor.class).info("/send_private_msg to {}\n\t{}\n\tresult: {}", user_id, content, result.toString());
+        LoggerFactory.getLogger(ApiExecutor.class).info("/send_private_msg to {}\n{}\nresult: {}\n", user_id, content, result.toString());
     }
 
     public static void sendGroupMessage(long group_id, String content) {
@@ -22,7 +22,7 @@ public class ApiExecutor {
         params.put("group_id", Long.toString(group_id));
         params.put("message", content);
         JsonNode result = HttpSender.sendHttpRequest(HttpSender.buildUrl(address, "send_group_msg", params));
-        LoggerFactory.getLogger(ApiExecutor.class).info("/send_group_msg to {}\n\t{}\n\tresult: {}", group_id, content, result.toString());
+        LoggerFactory.getLogger(ApiExecutor.class).info("/send_group_msg to {}\n{}\nresult: {}\n", group_id, content, result.toString());
     }
 
     //go-cqhttp的监听地址，默认为本地http://127.0.0.1:5700

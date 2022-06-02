@@ -13,7 +13,7 @@ public class GroupRepeater extends Plugin {
 
     @Override
     public boolean onGroupMessage(JsonNode message) {
-        if (new Random().nextInt(10) == 0) {
+        if (new Random().nextInt(100) == 0) {
             //hit, send back
             ApiExecutor.sendGroupMessage(message.get("group_id").asLong(), message.get("message").asText());
         }

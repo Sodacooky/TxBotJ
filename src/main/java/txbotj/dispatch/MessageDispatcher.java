@@ -38,11 +38,11 @@ public class MessageDispatcher {
 
     private static void dispatchChat(JsonNode message) {
         //判断群聊私聊
-        switch (message.get("sub_type").asText()) {
+        switch (message.get("message_type").asText()) {
             case "group":
                 plugins.forEach((k, v) -> v.onGroupMessage(message));
                 break;
-            case "friend":
+            case "private":
                 plugins.forEach((k, v) -> v.onPrivateMessage(message));
                 break;
             default:
