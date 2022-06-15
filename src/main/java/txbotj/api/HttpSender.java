@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
@@ -29,7 +30,7 @@ public class HttpSender {
     private static String buildParametersString(Map<String, String> parameters) {
         StringBuilder stringBuilder = new StringBuilder("?");
         parameters.forEach((k, v) -> {
-            stringBuilder.append(k).append("=").append(v);
+            stringBuilder.append(k).append("=").append(URLEncoder.encode(v, StandardCharsets.UTF_8));
             stringBuilder.append("&");
         });
         return stringBuilder.toString();

@@ -3,3 +3,4 @@ go-cqhttp/
 out/
 META-INF/
 target/
+/src/main/resources/bad_words.txt

@@ -7,6 +7,7 @@ import txbotj.dispatch.HttpListener;
 import txbotj.dispatch.MessageDispatcher;
 import txbotj.plugins.GroupRepeater;
 import txbotj.plugins.PrivateEchoMan;
+import txbotj.plugins.utils.badwordchecker.BadWordsChecker;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -20,10 +21,13 @@ public class ApplicationMain {
         //go-cqhttp的监听地址
         //ApiExecutor.address = "http://127.0.0.1:5700"; //默认值，无需
 
-        //创建HttpServer，将Handler绑定到 "/"，端口为5700对应go-cqhttp
+        //创建HttpServer，将Handler绑定到 "/"，端口为5701对应go-cqhttp
         HttpServer httpServer = HttpServer.create(new InetSocketAddress(5701), 0);
         httpServer.createContext("/", new HttpListener());
         httpServer.setExecutor(null);
+
+        //初始化和创建插件所共同使用的组件
+        BadWordsChecker.loadBadWords();
 
         //new出Plugin对象，无需保存，自动装载到MessageDispatcher里
         logger.info("Loading plugins...");
