@@ -31,3 +31,9 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### 构建工件 ###
+/out/
+
+### 需要屏蔽的敏感文件 ###
+/**/bad_words.txt
