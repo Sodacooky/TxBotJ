@@ -2,9 +2,9 @@ package sodacooky.txbotj.core;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
@@ -12,7 +12,7 @@ import java.util.List;
  * 注册监听根URL，使用Spring的Controller监听来自cqhttp的post请求，
  * 将收到的请求，（自动换转为的Json）分发给各个插件进行处理
  */
-@Controller
+@RestController
 public class MessageDispatcher {
 
     @Autowired
