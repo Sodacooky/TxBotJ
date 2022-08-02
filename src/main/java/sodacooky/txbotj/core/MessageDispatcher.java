@@ -28,10 +28,16 @@ public class MessageDispatcher {
         //群聊消息，私聊消息，还是什么消息
         switch (requestJson.get("message_type").asText()) {
             case "group":
-                plugins.forEach((onePlugin) -> onePlugin.onGroupMessage(requestJson));
+                for (IPlugin plugin : plugins) {
+                    boolean ret = plugin.onGroupMessage(requestJson);
+                    if (!ret) return;
+                }
                 break;
             case "private":
-                plugins.forEach((onePlugin) -> onePlugin.onPrivateMessage(requestJson));
+                for (IPlugin plugin : plugins) {
+                    boolean ret = plugin.onPrivateMessage(requestJson);
+                    if (!ret) return;
+                }
                 break;
             default:
                 break;

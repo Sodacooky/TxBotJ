@@ -11,7 +11,7 @@ import java.util.Map;
  * 消息发送相关API
  */
 @Component
-public class MessageSender {
+public class MessageApi {
 
     @Autowired
     private HttpSender httpSender;

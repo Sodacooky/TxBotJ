@@ -3,7 +3,6 @@ package sodacooky.txbotj.core;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -43,12 +42,10 @@ public class HttpSender {
      */
     public Future<JsonNode> queueRequest(String requestUrl) {
         //添加任务
-        Future<JsonNode> theFuture = executorService.submit(() -> {
+        return executorService.submit(() -> {
             return sendRequest(requestUrl);
         });
-        //将Future返回给上层，是否处理数据由其处置
-        LoggerFactory.getLogger(HttpSender.class).info("创建了Http请求{}", theFuture.toString());
-        return theFuture;
+        //将Future返回给上层，是否要阻塞处理响应由上层决定
     }
 
 
@@ -91,33 +88,34 @@ public class HttpSender {
      * @return 来自cqhttp的结果json
      */
     private JsonNode sendRequest(String requestUrl) {
-        //speed limit
+        //等待两秒，防止被制裁
         try {
             Thread.sleep(2000);
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
-        //convert to url object
+        //生成URL请求
         URL url = null;
         try {
             url = new URL(requestUrl);
         } catch (MalformedURLException e) {
             throw new RuntimeException(e);
         }
-        //execute request
+        //发送URL请求
         URLConnection urlConnection = null;
         String result = null;
         try {
+            //连接
             urlConnection = url.openConnection();
             urlConnection.connect();
-            //the result
+            //获取响应数据
             ByteArrayOutputStream stringStream = new ByteArrayOutputStream();
             urlConnection.getInputStream().transferTo(stringStream);
             result = stringStream.toString(StandardCharsets.UTF_8);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-        //
+        //结果为Json字符串，转换为JsonNode
         try {
             return objectMapper.readTree(result);
         } catch (JsonProcessingException e) {
