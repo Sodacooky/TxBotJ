@@ -22,11 +22,11 @@ public class MessageApi {
      * @param userId  对方qq
      * @param content 消息内容
      */
-    public void sendPrivateMessage(long userId, String content) {
+    public void sendPrivateMessage(long userId, String content, int delaySecond) {
         Map<String, String> params = new HashMap<>();
         params.put("user_id", Long.toString(userId));
         params.put("message", content);
-        httpSender.queueRequest(httpSender.buildUrl("send_private_msg", params));
+        httpSender.queueRequest(httpSender.buildUrl("send_private_msg", params), delaySecond);
     }
 
     /**
@@ -35,11 +35,11 @@ public class MessageApi {
      * @param groupId 目标群号
      * @param content 消息内容
      */
-    public void sendGroupMessage(long groupId, String content) {
+    public void sendGroupMessage(long groupId, String content, int delaySecond) {
         Map<String, String> params = new HashMap<>();
         params.put("group_id", Long.toString(groupId));
         params.put("message", content);
-        httpSender.queueRequest(httpSender.buildUrl("send_group_msg", params));
+        httpSender.queueRequest(httpSender.buildUrl("send_group_msg", params), delaySecond);
     }
 
 }

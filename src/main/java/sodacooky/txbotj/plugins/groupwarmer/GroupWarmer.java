@@ -3,13 +3,13 @@ package sodacooky.txbotj.plugins.groupwarmer;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import sodacooky.txbotj.api.MessageApi;
 import sodacooky.txbotj.core.IPlugin;
 import sodacooky.txbotj.plugins.utils.ManagerChecker;
 
+import javax.annotation.Resource;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
@@ -23,11 +23,11 @@ import java.util.Map;
 @Component
 public class GroupWarmer implements IPlugin {
 
-    @Autowired
+    @Resource
     private MessageApi messageApi;
-    @Autowired
+    @Resource
     private GroupWarmerMapper groupWarmerMapper;
-    @Autowired
+    @Resource
     private ManagerChecker managerChecker;
 
     @Override
@@ -58,7 +58,7 @@ public class GroupWarmer implements IPlugin {
         if (!content.startsWith(">>GroupWarmer")) return true;
         //权限判断
         if (managerChecker.isManager(userID) != 1) {
-            messageApi.sendPrivateMessage(userID, "你不是机器人管理员！");
+            messageApi.sendPrivateMessage(userID, "你不是机器人管理员！", 0);
             return false;
         }
         //处理
@@ -92,7 +92,7 @@ public class GroupWarmer implements IPlugin {
             } else {
                 //添加记录以开启
                 groupWarmerMapper.createRecord(operatingGroupID, Calendar.getInstance().getTimeInMillis());
-                messageApi.sendPrivateMessage(uid, "操作完成");
+                messageApi.sendPrivateMessage(uid, "操作完成", 0);
             }
         } else if (expectedOperation.equalsIgnoreCase("stop")) {        //停用
             //检查是否存在
@@ -101,7 +101,7 @@ public class GroupWarmer implements IPlugin {
             } else {
                 //存在意味着开启了，删除记录
                 groupWarmerMapper.removeRecord(operatingGroupID);
-                messageApi.sendPrivateMessage(uid, "操作完成");
+                messageApi.sendPrivateMessage(uid, "操作完成", 0);
             }
         } else {                                                                    //意外
             //操作词错误
@@ -117,7 +117,7 @@ public class GroupWarmer implements IPlugin {
      * @param uid    qq
      */
     private void sendErrorMessage(String reason, long uid) {
-        messageApi.sendPrivateMessage(uid, reason + "\n用法: >>GroupWarmer start/stop [group_id]");
+        messageApi.sendPrivateMessage(uid, reason + "\n用法: >>GroupWarmer start/stop [group_id]", 0);
     }
 
 
@@ -146,20 +146,24 @@ public class GroupWarmer implements IPlugin {
      */
     @Scheduled(cron = "0 0 */4 * * *")
     public void doWarm() {
+        //如果当前是深夜，凌晨0点到早上7点之间，略过
+        Calendar calendar = Calendar.getInstance();
+        int nowHour = calendar.get(Calendar.HOUR);
+        if (nowHour <= 7) return;
         //用于存放启用的群及其上次消息时间
-        Map<Long, Long> task = new HashMap<>();
+        Map<Long, Long> groupLastRepeatTime = new HashMap<>();
         //读取启用的群
         List<Long> enabledGroupID = groupWarmerMapper.getEnabledGroupID();
         //读取其上次消息时间
-        enabledGroupID.forEach(v -> task.put(v, groupWarmerMapper.getLastMessageTimestamp(v)));
+        enabledGroupID.forEach(v -> groupLastRepeatTime.put(v, groupWarmerMapper.getLastMessageTimestamp(v)));
         //遍历判断是否需要暖
         long nowTimestamp = Calendar.getInstance().getTimeInMillis();
         Logger logger = LoggerFactory.getLogger(GroupWarmer.class);
-        for (Map.Entry<Long, Long> pair : task.entrySet()) {
+        for (Map.Entry<Long, Long> pair : groupLastRepeatTime.entrySet()) {
             long delta = nowTimestamp - pair.getValue();
-            if (delta > 1000 * 60 * 60 * 4) {
-                //上次发言时间距离现在已经超过4小时，需要暖
-                messageApi.sendGroupMessage(pair.getKey(), "别让群友寂寞太久！");
+            if (delta >= (1000 * 3600 * 4) - 5000) { //注意是3小时59分钟55秒，设置为4小时会变成8小时
+                //上次发言时间距离现在已经4小时，需要暖
+                messageApi.sendGroupMessage(pair.getKey(), "别让群友寂寞太久！", 0);
                 //更新消息时间
                 groupWarmerMapper.updateLastMessageTimestamp(pair.getKey(), nowTimestamp);
                 //日志

@@ -2,12 +2,12 @@ package sodacooky.txbotj.plugins.repeater;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import sodacooky.txbotj.api.MessageApi;
 import sodacooky.txbotj.core.IPlugin;
 import sodacooky.txbotj.utils.BadWordsChecker;
 
+import javax.annotation.Resource;
 import java.util.Calendar;
 import java.util.Random;
 
@@ -18,11 +18,11 @@ import java.util.Random;
 @Component
 public class Repeater implements IPlugin {
 
-    @Autowired
+    @Resource
     private BadWordsChecker badWordsChecker; //敏感词判断工具
-    @Autowired
+    @Resource
     private MessageApi messageApi;
-    @Autowired
+    @Resource
     private RepeaterMapper repeaterMapper; //复读机所用数据库操作
 
     @Override
@@ -51,7 +51,7 @@ public class Repeater implements IPlugin {
             return false;//这种消息也没必要继续复读了
         }
         //送回
-        messageApi.sendPrivateMessage(msgUser, msgContent);
+        messageApi.sendPrivateMessage(msgUser, msgContent, new Random().nextInt(3) + 1);
         LoggerFactory.getLogger(Repeater.class).warn("复读了私聊消息到 {} : {}", msgUser, trimString(msgContent));
         return true;//就算复读了，也可能有别的插件需要工作
     }
@@ -84,8 +84,8 @@ public class Repeater implements IPlugin {
         //避免密集复读
         long lastRepeatTimestamp = repeaterMapper.getLastRepeatTimestamp(groupId);
         long deltaMs = Calendar.getInstance().getTimeInMillis() - lastRepeatTimestamp;
-        if (deltaMs < 1000 * 60 * 10) {
-            //10分钟内只复读一次嗷
+        if (deltaMs < 1000 * 60 * 30) {
+            //30分钟内只复读一次嗷
             return true;
         }
         //开始抽签
@@ -102,7 +102,7 @@ public class Repeater implements IPlugin {
             }
         }
         //命中，复读
-        messageApi.sendGroupMessage(groupId, msgContent);
+        messageApi.sendGroupMessage(groupId, msgContent, random.nextInt(3) + 1);
         //更新复读时间
         repeaterMapper.updateLastRepeatTimestamp(groupId, Calendar.getInstance().getTimeInMillis());
         LoggerFactory.getLogger(Repeater.class).warn("复读了群消息到 {} : {}", groupId, trimString(msgContent));

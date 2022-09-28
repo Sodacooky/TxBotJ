@@ -40,9 +40,10 @@ public class HttpSender {
      *
      * @param requestUrl 请求的URL
      */
-    public Future<JsonNode> queueRequest(String requestUrl) {
+    public Future<JsonNode> queueRequest(String requestUrl, int delaySecond) {
         //添加任务
         return executorService.submit(() -> {
+            Thread.sleep(delaySecond * 1000L);
             return sendRequest(requestUrl);
         });
         //将Future返回给上层，是否要阻塞处理响应由上层决定
@@ -88,12 +89,6 @@ public class HttpSender {
      * @return 来自cqhttp的结果json
      */
     private JsonNode sendRequest(String requestUrl) {
-        //等待两秒，防止被制裁
-        try {
-            Thread.sleep(2000);
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
         //生成URL请求
         URL url = null;
         try {
