@@ -30,6 +30,8 @@ public class GroupWarmer implements IPlugin {
     @Resource
     private ManagerChecker managerChecker;
 
+    private final Logger logger = LoggerFactory.getLogger(GroupWarmer.class);
+
     @Override
     public int getPriority() {
         return Integer.MAX_VALUE; //优先级高，要记录监听每一条消息
@@ -141,15 +143,15 @@ public class GroupWarmer implements IPlugin {
 
 
     /**
-     * 每四小时，从数据库开启该功能的群内，检查上次消息时间，
-     * 如果超过四小时，则发送消息
+     * 每两小时，从数据库开启该功能的群内，检查上次消息时间，
+     * 如果距离上次有人发言超过四小时，则发送消息
      */
-    @Scheduled(cron = "0 0 */4 * * *")
+    @Scheduled(cron = "0 0 */2 * * *")
     public void doWarm() {
-        //如果当前是深夜，凌晨0点到早上7点之间，略过
+        //如果当前是深夜，凌晨2点到早上7点之间，略过
         Calendar calendar = Calendar.getInstance();
         int nowHour = calendar.get(Calendar.HOUR);
-        if (nowHour <= 7) return;
+        if (nowHour >= 2 && nowHour <= 7) return;
         //用于存放启用的群及其上次消息时间
         Map<Long, Long> groupLastRepeatTime = new HashMap<>();
         //读取启用的群
@@ -157,14 +159,13 @@ public class GroupWarmer implements IPlugin {
         //读取其上次消息时间
         enabledGroupID.forEach(v -> groupLastRepeatTime.put(v, groupWarmerMapper.getLastMessageTimestamp(v)));
         //遍历判断是否需要暖
-        long nowTimestamp = Calendar.getInstance().getTimeInMillis();
-        Logger logger = LoggerFactory.getLogger(GroupWarmer.class);
+        long nowTimestamp = calendar.getTimeInMillis();
         for (Map.Entry<Long, Long> pair : groupLastRepeatTime.entrySet()) {
             long delta = nowTimestamp - pair.getValue();
-            if (delta >= (1000 * 3600 * 4) - 5000) { //注意是3小时59分钟55秒，设置为4小时会变成8小时
+            if (delta >= (1000 * 3600 * 4) - 10000) { //是否超过大概4小时没人说话？
                 //上次发言时间距离现在已经4小时，需要暖
                 messageApi.sendGroupMessage(pair.getKey(), "别让群友寂寞太久！", 0);
-                //更新消息时间
+                //自己暖的也算发言时间
                 groupWarmerMapper.updateLastMessageTimestamp(pair.getKey(), nowTimestamp);
                 //日志
                 logger.info("暖了群 {}", pair.getKey());
