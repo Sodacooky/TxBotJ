@@ -5,7 +5,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import sodacooky.txbotj.api.MessageApi;
 import sodacooky.txbotj.core.IPlugin;
-import sodacooky.txbotj.utils.BadWordsChecker;
+import sodacooky.txbotj.utils.badwords.BadWordsChecker;
 
 import javax.annotation.Resource;
 import java.util.Calendar;

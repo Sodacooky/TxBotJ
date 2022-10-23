@@ -1,23 +1,50 @@
 package sodacooky.txbotj.plugins.utils;
 
-import org.apache.ibatis.annotations.Mapper;
-import org.apache.ibatis.annotations.Param;
-import org.apache.ibatis.annotations.Select;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Component;
+import org.springframework.util.Assert;
+import sodacooky.txbotj.utils.global.GlobalValue;
+
+import javax.annotation.Resource;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * 管理者身份检查工具
  */
 @Component
-@Mapper
-public interface ManagerChecker {
+public class ManagerChecker {
+
+    @Resource
+    private GlobalValue globalValue;
+
+    @Resource
+    private ObjectMapper objectMapper;
 
     /**
-     * 判断其是否是机器人管理者
+     * 判断是否是机器人管理员
      *
-     * @param user_id qq号
-     * @return 命中数量，即1为管理员，0为非管理员
+     * @param user_id 欲判断的qq
+     * @return 是否为管理员
      */
-    @Select("select count(*) from manager where user_id=#{uid}")
-    int isManager(@Param("uid") long user_id);
+    public boolean isManager(long user_id) {
+        String manager = globalValue.readValue("manager");
+        try {
+            //get all manager
+            JsonNode jsonNode = objectMapper.readTree(manager);
+            Assert.isTrue(jsonNode.isArray(), "global.manager应为Json数组！");
+            //convert to list
+            List<Long> managers = new ArrayList<>();
+            for (JsonNode managerIdStrNode : jsonNode) {
+                managers.add(Long.parseLong(managerIdStrNode.asText()));
+            }
+            //check
+            return managers.contains(user_id);
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
 }

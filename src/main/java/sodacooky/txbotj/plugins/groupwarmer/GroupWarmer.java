@@ -59,7 +59,7 @@ public class GroupWarmer implements IPlugin {
         //判断是否为本插件控制指令
         if (!content.startsWith(">>GroupWarmer")) return true;
         //权限判断
-        if (managerChecker.isManager(userID) != 1) {
+        if (!managerChecker.isManager(userID)) {
             messageApi.sendPrivateMessage(userID, "你不是机器人管理员！", 0);
             return false;
         }

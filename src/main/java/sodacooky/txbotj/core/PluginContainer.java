@@ -43,7 +43,7 @@ public class PluginContainer {
         Logger logger = LoggerFactory.getLogger(PluginContainer.class);
         logger.warn("============");
         logger.warn("已加载下列插件：");
-        plugins.forEach((v) -> logger.warn("名称 {}\t优先级 {}", v.getName(), v.getPriority()));
+        plugins.forEach((v) -> System.out.println("名称: " + v.getName() + ", 优先级: " + v.getPriority()));
         logger.warn("============");
     }
 
