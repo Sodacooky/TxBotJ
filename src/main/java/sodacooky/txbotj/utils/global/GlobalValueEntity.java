@@ -12,7 +12,7 @@ import lombok.ToString;
 @AllArgsConstructor
 @ToString
 @TableName("global")
-public class GlobalValueObject {
+public class GlobalValueEntity {
     @TableId("key")
     private String key;
     private String value;

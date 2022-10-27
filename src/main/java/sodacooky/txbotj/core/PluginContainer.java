@@ -1,7 +1,6 @@
 package sodacooky.txbotj.core;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
@@ -14,6 +13,7 @@ import java.util.stream.Collectors;
 /**
  * 自动加载插件包路径下的类，存放到这里
  */
+@Slf4j
 @Component
 public class PluginContainer {
     private List<IPlugin> plugins = new ArrayList<>();
@@ -29,7 +29,7 @@ public class PluginContainer {
         beansMap = applicationContext.getBeansOfType(IPlugin.class);
         //判断有没有插件
         if (beansMap.isEmpty()) {
-            LoggerFactory.getLogger(PluginContainer.class).error("没有插件");
+            log.error("没有插件");
             return;
         }
         //将插件存放到内部容器并按优先级排序
@@ -40,11 +40,10 @@ public class PluginContainer {
                 .sorted(Comparator.comparingInt(IPlugin::getPriority).reversed())
                 .collect(Collectors.toList());
         //打印消息
-        Logger logger = LoggerFactory.getLogger(PluginContainer.class);
-        logger.warn("============");
-        logger.warn("已加载下列插件：");
+        log.info("已加载下列插件：");
+        System.out.println("==========");
         plugins.forEach((v) -> System.out.println("名称: " + v.getName() + ", 优先级: " + v.getPriority()));
-        logger.warn("============");
+        System.out.println("==========");
     }
 
     public List<IPlugin> getPlugins() {

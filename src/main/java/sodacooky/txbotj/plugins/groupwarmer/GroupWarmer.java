@@ -7,13 +7,11 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import sodacooky.txbotj.api.MessageApi;
 import sodacooky.txbotj.core.IPlugin;
-import sodacooky.txbotj.plugins.utils.ManagerChecker;
+import sodacooky.txbotj.utils.cmdparser.CommandParser;
+import sodacooky.txbotj.utils.managercheck.ManagerChecker;
 
 import javax.annotation.Resource;
-import java.util.Calendar;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * 暖群工具
@@ -29,6 +27,8 @@ public class GroupWarmer implements IPlugin {
     private GroupWarmerMapper groupWarmerMapper;
     @Resource
     private ManagerChecker managerChecker;
+    @Resource
+    private CommandParser commandParser;
 
     private final Logger logger = LoggerFactory.getLogger(GroupWarmer.class);
 
@@ -53,63 +53,63 @@ public class GroupWarmer implements IPlugin {
         //获取消息信息
         String content = message.get("message").asText();
         long userID = message.get("user_id").asLong();
+        //提取参数
+        List<String> blocks = commandParser.parse(content);
         //指令判断
-        //判断是否为控制指令
-        if (!content.startsWith(">>")) return true;
+        if (null == blocks) return true;
         //判断是否为本插件控制指令
-        if (!content.startsWith(">>GroupWarmer")) return true;
+        if (!blocks.get(0).endsWith("GroupWarmer")) return true;
+        //判断参数数量
+        if (blocks.size() != 3) {
+            //参数不正确
+            sendErrorMessage("参数个数不正确", userID);
+            return false;
+        }
         //权限判断
         if (!managerChecker.isManager(userID)) {
             messageApi.sendPrivateMessage(userID, "你不是机器人管理员！", 0);
             return false;
         }
         //处理
-        processCommand(content, userID);
+        commandProcess(blocks.get(1), Long.parseLong(blocks.get(2)), userID);
         return false;
     }
 
     /**
-     * 实际处理指令
+     * 实际处理命令
      *
-     * @param ctn 内容
-     * @param uid qq
+     * @param expectedOperation 操作
+     * @param operatingGroupID  操作的群
+     * @param feedbackUserId    操作的用户
      */
-    private void processCommand(String ctn, long uid) {
-        //提取参数
-        String[] blocks = ctn.split(" ");
-        //判断参数数量
-        if (blocks.length != 3) {
-            //参数不正确
-            sendErrorMessage("参数个数不正确", uid);
-            return;
-        }
-        //获取操作动作和操作群号
-        String expectedOperation = blocks[1];
-        long operatingGroupID = Long.parseLong(blocks[2]);
-        //判断动作
-        if (expectedOperation.equalsIgnoreCase("start")) {              //启用
-            //检查是否存在
-            if (groupWarmerMapper.isExist(operatingGroupID) != 0) {
-                sendErrorMessage("群" + operatingGroupID + "已经开启", uid);
-            } else {
-                //添加记录以开启
-                groupWarmerMapper.createRecord(operatingGroupID, Calendar.getInstance().getTimeInMillis());
-                messageApi.sendPrivateMessage(uid, "操作完成", 0);
-            }
-        } else if (expectedOperation.equalsIgnoreCase("stop")) {        //停用
-            //检查是否存在
-            if (groupWarmerMapper.isExist(operatingGroupID) != 1) {
-                sendErrorMessage("群" + operatingGroupID + "本没有开启", uid);
-            } else {
-                //存在意味着开启了，删除记录
-                groupWarmerMapper.removeRecord(operatingGroupID);
-                messageApi.sendPrivateMessage(uid, "操作完成", 0);
-            }
-        } else {                                                                    //意外
+    private void commandProcess(String expectedOperation, long operatingGroupID, long feedbackUserId) {
+        String[] availableOperation = new String[]{"start", "end"};
+        if (Arrays.stream(availableOperation).noneMatch(s -> s.equalsIgnoreCase(expectedOperation))) {
             //操作词错误
-            sendErrorMessage("不存在的操作 " + expectedOperation, uid);
+            sendErrorMessage("不存在的操作 " + expectedOperation, feedbackUserId);
         }
-
+        switch (expectedOperation.toLowerCase()) {
+            case "start":
+                //检查是否已开启（存在）
+                if (groupWarmerMapper.isExist(operatingGroupID) != 0) {
+                    sendErrorMessage("群" + operatingGroupID + "已经开启", feedbackUserId);
+                } else {
+                    //添加记录以开启
+                    groupWarmerMapper.createRecord(operatingGroupID, Calendar.getInstance().getTimeInMillis());
+                    messageApi.sendPrivateMessage(feedbackUserId, "操作完成", 0);
+                }
+                break;
+            case "stop":
+                //检查是否存在
+                if (groupWarmerMapper.isExist(operatingGroupID) != 1) {
+                    sendErrorMessage("群" + operatingGroupID + "本没有开启", feedbackUserId);
+                } else {
+                    //存在意味着开启了，删除记录
+                    groupWarmerMapper.removeRecord(operatingGroupID);
+                    messageApi.sendPrivateMessage(feedbackUserId, "操作完成", 0);
+                }
+                break;
+        }
     }
 
     /**

@@ -1,4 +1,4 @@
-package sodacooky.txbotj.plugins.utils;
+package sodacooky.txbotj.utils.managercheck;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;

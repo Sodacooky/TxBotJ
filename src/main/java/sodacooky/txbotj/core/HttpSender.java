@@ -3,9 +3,9 @@ package sodacooky.txbotj.core;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.Resource;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.MalformedURLException;
@@ -26,7 +26,7 @@ import java.util.concurrent.Future;
 public class HttpSender {
 
     private ExecutorService executorService;//并发容器
-    @Autowired
+    @Resource
     private ObjectMapper objectMapper;//JsonNode转换工具
     public String hostAddress = "http://127.0.0.1:5700";//cqhttp监听地址，默认为http://127.0.0.1:5700，末尾不要加'/'
 
@@ -58,10 +58,22 @@ public class HttpSender {
      * @return 拼接后的字符串
      */
     public String buildUrl(String method, Map<String, String> parameters) {
-        //虽然约定了hostAddress后不能以斜杠结尾，还是判断一下并移除吧
-        while (hostAddress.endsWith("/")) {
+        return buildCustomUrl(hostAddress, method, parameters);
+    }
+
+    /**
+     * 使用Header代替http://xxx部分，将请求方法和参数拼接
+     *
+     * @param header     http://xxx的部分，结尾不要有斜杠
+     * @param method     请求方法，如"send_private_msg"
+     * @param parameters 参数
+     * @return 拼接后的字符串
+     */
+    public String buildCustomUrl(String header, String method, Map<String, String> parameters) {
+        //虽然约定了不能以斜杠结尾，还是判断一下并移除吧
+        while (header.endsWith("/")) {
             //删除直到不以斜杠为结尾
-            hostAddress = hostAddress.substring(0, hostAddress.length() - 1);
+            header = header.substring(0, header.length() - 1);
         }
         //接下来把参数拼接成 ?key=val&key=val...
         StringBuilder paramsBuilder = new StringBuilder("?");
@@ -70,7 +82,7 @@ public class HttpSender {
             paramsBuilder.append("&");
         });
         //最终把三者拼起来
-        return hostAddress + "/" + method + paramsBuilder.toString();
+        return header + "/" + method + paramsBuilder.toString();
     }
 
     /**

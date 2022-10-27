@@ -1,2 +1,14 @@
-暖群工具启停（需要机器人管理员）：
+机器人命令前缀为: >>
+(两个半角英文大于号)
+
+【暖群插件】MAX
+对某群启动或关闭（需要机器人管理员）：
 >>GroupWarmer start/stop [group_id]
+
+【汇率插件】100
+>>ExchangeRate [From] [To] [FromAmount]
+[From]与[To]为货币代号如CNY、USD
+[FromAmount]为来源货币的整数数量
+
+【复读插件】-100
+随机规避违规消息后复读

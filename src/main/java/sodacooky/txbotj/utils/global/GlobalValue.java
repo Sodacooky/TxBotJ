@@ -19,9 +19,9 @@ public class GlobalValue {
      * @return 如果没有记录或为null值
      */
     public String readValue(String key) {
-        GlobalValueObject globalValueObject = globalValueMapper.selectById(key);
-        if (null == globalValueObject) return null;
-        else return globalValueObject.getValue();
+        GlobalValueEntity globalValueEntity = globalValueMapper.selectById(key);
+        if (null == globalValueEntity) return null;
+        else return globalValueEntity.getValue();
     }
 
     /**
@@ -31,14 +31,14 @@ public class GlobalValue {
      * @param value new value
      */
     public void setValue(String key, String value) {
-        GlobalValueObject globalValueObject = globalValueMapper.selectById(key);
-        if (null == globalValueObject) {
+        GlobalValueEntity globalValueEntity = globalValueMapper.selectById(key);
+        if (null == globalValueEntity) {
             //不存在，新增
-            globalValueMapper.insert(new GlobalValueObject(key, value));
+            globalValueMapper.insert(new GlobalValueEntity(key, value));
         } else {
             //存在，更改
-            LambdaUpdateWrapper<GlobalValueObject> wrapper = new LambdaUpdateWrapper<>();
-            wrapper.eq(GlobalValueObject::getKey, key).set(GlobalValueObject::getValue, value);
+            LambdaUpdateWrapper<GlobalValueEntity> wrapper = new LambdaUpdateWrapper<>();
+            wrapper.eq(GlobalValueEntity::getKey, key).set(GlobalValueEntity::getValue, value);
             globalValueMapper.update(null, wrapper);
         }
     }
@@ -50,8 +50,8 @@ public class GlobalValue {
      * @return 如果本来就没有该数据，返回FALSE
      */
     public boolean remove(String key) {
-        LambdaQueryWrapper<GlobalValueObject> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(GlobalValueObject::getKey, key);
+        LambdaQueryWrapper<GlobalValueEntity> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(GlobalValueEntity::getKey, key);
         if (globalValueMapper.exists(wrapper)) {
             return globalValueMapper.delete(wrapper) > 0;
         } else {
