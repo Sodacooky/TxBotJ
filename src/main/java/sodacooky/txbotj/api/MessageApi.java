@@ -1,9 +1,10 @@
 package sodacooky.txbotj.api;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import com.fasterxml.jackson.databind.JsonNode;
 import org.springframework.stereotype.Component;
 import sodacooky.txbotj.core.HttpSender;
 
+import javax.annotation.Resource;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -13,8 +14,44 @@ import java.util.Map;
 @Component
 public class MessageApi {
 
-    @Autowired
+    @Resource
     private HttpSender httpSender;
+
+
+    /**
+     * 向消息体来源发送内容
+     *
+     * @param cqMessageBody 来自cqhttp的消息体
+     * @param content       消息内容
+     */
+    public void sendBackMessage(JsonNode cqMessageBody, String content, int delaySecond) {
+        //获取消息类型
+        String messageType = cqMessageBody.get("message_type").asText();
+        //根据类型决定发送方法
+        if (messageType.equals("group")) {
+            sendGroupMessage(cqMessageBody.get("group_id").asLong(), content, delaySecond);
+        } else if (messageType.equals("private")) {
+            sendPrivateMessage(cqMessageBody.get("user_id").asLong(), content, delaySecond);
+        } else {
+            throw new RuntimeException("无法处理的消息源类型");
+        }
+    }
+
+    /**
+     * 使用错误信息格式向消息体来源发送错误信息
+     *
+     * @param cqMessageBody 来自cqhttp的消息体
+     * @param errorMessage  错误信息内容
+     */
+    public void sendErrorMessage(JsonNode cqMessageBody, String errorMessage) {
+        //引发错误的消息
+        String causeMessageContent = cqMessageBody.get("message").asText();
+        if (causeMessageContent.length() > 64) causeMessageContent = causeMessageContent.substring(0, 64) + "...";
+        //构建错误消息
+        String resultErrorMessage = "=== 错误 ==>" + "\n" + errorMessage + "\n" + "=== 错误来源 ==>" + "\n" + causeMessageContent;
+        //send back
+        sendBackMessage(cqMessageBody, resultErrorMessage, 1);
+    }
 
     /**
      * 发送私聊消息
@@ -41,5 +78,6 @@ public class MessageApi {
         params.put("message", content);
         httpSender.queueRequest(httpSender.buildUrl("send_group_msg", params), delaySecond);
     }
+
 
 }

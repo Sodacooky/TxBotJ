@@ -47,13 +47,13 @@ public class ExchangeRate implements IPlugin {
     }
 
     @Override
-    public boolean onPrivateMessage(JsonNode message) {
-        return perform(message, false);
+    public boolean onPrivateMessage(JsonNode cqMessageBody) {
+        return perform(cqMessageBody, false);
     }
 
     @Override
-    public boolean onGroupMessage(JsonNode message) {
-        return perform(message, true);
+    public boolean onGroupMessage(JsonNode cqMessageBody) {
+        return perform(cqMessageBody, true);
     }
 
 
@@ -72,8 +72,8 @@ public class ExchangeRate implements IPlugin {
 
         //从数据库读取今日已使用次数
         if (Integer.parseInt(globalValue.readValue("tianapi_count")) >= 100) {
-            if (isGroup) messageApi.sendGroupMessage(goalId, "今日API已达到限额", 0);
-            else messageApi.sendPrivateMessage(goalId, "今日API已达到限额", 0);
+            messageApi.sendErrorMessage(message, "今日API已达到限额");
+            return false;
         }
 
         //尝试将指令拆分为块
@@ -84,8 +84,7 @@ public class ExchangeRate implements IPlugin {
         if (!blocks.get(0).endsWith("ExchangeRate")) return true;
         //参数数量是否正确
         if (4 != blocks.size()) {
-            if (isGroup) messageApi.sendGroupMessage(goalId, "参数数量错误", 0);
-            else messageApi.sendPrivateMessage(goalId, "参数数量错误", 0);
+            messageApi.sendErrorMessage(message, "参数数量错误");
             return false;
         }
 
@@ -110,9 +109,7 @@ public class ExchangeRate implements IPlugin {
         String msg = buildResultString(fromCode, toCode, fromAmount, toAmount);
 
         //发送消息
-        if (isGroup) messageApi.sendGroupMessage(goalId, msg, 1);
-        else messageApi.sendPrivateMessage(goalId, msg, 1);
-
+        messageApi.sendBackMessage(message, msg, 1);
         return false;
     }
 

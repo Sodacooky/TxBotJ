@@ -24,17 +24,17 @@ public interface IPlugin {
     /**
      * 响应私聊消息
      *
-     * @param message 消息json
+     * @param cqMessageBody 消息json
      * @return 返回true时继续传递消息给下一个插件，否则当前插件为最后一个处理者
      */
-    boolean onPrivateMessage(JsonNode message);
+    boolean onPrivateMessage(JsonNode cqMessageBody) throws Exception;
 
     /**
      * 响应群消息
      *
-     * @param message 消息json
+     * @param cqMessageBody 消息json
      * @return 返回true时继续传递消息给下一个插件，否则当前插件为最后一个处理者
      */
-    public boolean onGroupMessage(JsonNode message);
+    public boolean onGroupMessage(JsonNode cqMessageBody) throws Exception;
 
 }

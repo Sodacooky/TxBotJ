@@ -1,7 +1,7 @@
 package sodacooky.txbotj.plugins.repeater;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import sodacooky.txbotj.api.MessageApi;
 import sodacooky.txbotj.core.IPlugin;
@@ -15,6 +15,7 @@ import java.util.Random;
  * 进行群消息复读和私聊复读。
  * 群消息按概率复读并检查是否有敏感词，私聊消息全部复读也检查敏感词。
  */
+@Slf4j
 @Component
 public class Repeater implements IPlugin {
 
@@ -38,49 +39,53 @@ public class Repeater implements IPlugin {
     /**
      * 私聊复读
      *
-     * @param message 消息json
+     * @param cqMessageBody 消息json
      * @return 如果包含敏感词等，返回false
      */
     @Override
-    public boolean onPrivateMessage(JsonNode message) {
-        //获取消息信息
-        String msgContent = message.get("message").asText();
-        long msgUser = message.get("user_id").asLong();
+    public boolean onPrivateMessage(JsonNode cqMessageBody) {
         //检查
-        if (isContentInappropriate(msgContent)) {
-            return false;//这种消息也没必要继续复读了
+        if (isContentInappropriate(cqMessageBody.get("message").asText())) {
+            //这种消息也没必要继续处理
+            return false;
         }
         //送回
-        messageApi.sendPrivateMessage(msgUser, msgContent, new Random().nextInt(3) + 1);
-        LoggerFactory.getLogger(Repeater.class).warn("复读了私聊消息到 {} : {}", msgUser, trimString(msgContent));
-        return true;//就算复读了，也可能有别的插件需要工作
+        messageApi.sendBackMessage(cqMessageBody, cqMessageBody.get("message").asText(), new Random().nextInt(2) + 1);
+        //日志
+        log.info("复读{}私聊消息: {}", cqMessageBody.get("user_id").asLong(), trimString(cqMessageBody.get("message").asText()));
+        //就算复读了，也可能有别的插件需要工作
+        return true;
     }
 
     /**
      * 群消息复读，
      * 收到消息时会更新数据库
      *
-     * @param message 消息json
+     * @param cqMessageBody 消息json
      * @return 如果包含敏感词等，返回false
      */
     @Override
-    public boolean onGroupMessage(JsonNode message) {
+    public boolean onGroupMessage(JsonNode cqMessageBody) {
         //获取消息信息
-        String msgContent = message.get("message").asText();
-        long groupId = message.get("group_id").asLong();
+        String currentMessageContent = cqMessageBody.get("message").asText();
+        long groupId = cqMessageBody.get("group_id").asLong();
+
         //检查数据库
         if (repeaterMapper.isExist(groupId) == 0) {
             //不存在，新建
             repeaterMapper.createNew(groupId);
         }
-        //判断+1可能性
-        boolean existPlusOne = repeaterMapper.getLastMessageContent(groupId).equals(msgContent);
+
+        //在更新数据库前获取上一条消息
+        String previousMessageContent = repeaterMapper.getLastMessageContent(groupId);
         //更新数据库，上一条消息
-        repeaterMapper.updateLastMessageContent(groupId, msgContent);
+        repeaterMapper.updateLastMessageContent(groupId, currentMessageContent);
+
         //检查
-        if (isContentInappropriate(msgContent)) {
+        if (isContentInappropriate(currentMessageContent)) {
             return false;//这种消息也没必要继续复读了
         }
+
         //避免密集复读
         long lastRepeatTimestamp = repeaterMapper.getLastRepeatTimestamp(groupId);
         long deltaMs = Calendar.getInstance().getTimeInMillis() - lastRepeatTimestamp;
@@ -88,24 +93,21 @@ public class Repeater implements IPlugin {
             //30分钟内只复读一次嗷
             return true;
         }
+
         //开始抽签
         Random random = new Random();
-        //如果是+1，那么1/4概率复读
-        if (existPlusOne) {
-            if (random.nextInt(4) != 0) {
-                return true;
-            }
-            LoggerFactory.getLogger(Repeater.class).warn("下条复读为+1消息");
-        } else { //否则，1%概率复读
-            if (random.nextInt(100) != 0) {
-                return true;
-            }
+        if (previousMessageContent.equals(currentMessageContent)) {
+            if (random.nextInt(4) != 0) return true; //如果是+1，那么1/4概率复读
+            log.warn("下条群复读内容为+1消息");
+        } else {
+            if (random.nextInt(50) != 0) return true; //否则，2%概率复读
         }
         //命中，复读
-        messageApi.sendGroupMessage(groupId, msgContent, random.nextInt(3) + 1);
+        messageApi.sendGroupMessage(groupId, currentMessageContent, random.nextInt(3) + 2);
         //更新复读时间
         repeaterMapper.updateLastRepeatTimestamp(groupId, Calendar.getInstance().getTimeInMillis());
-        LoggerFactory.getLogger(Repeater.class).warn("复读了群消息到 {} : {}", groupId, trimString(msgContent));
+        //日志
+        log.warn("复读{}群消息: {}", groupId, trimString(currentMessageContent));
         //就算复读了，也可能有别的插件需要工作
         return true;
     }
