@@ -1,13 +1,17 @@
 package sodacooky.txbotj.plugins.groupwarmer;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import org.springframework.util.Assert;
 import sodacooky.txbotj.api.MessageApi;
 import sodacooky.txbotj.core.IPlugin;
 import sodacooky.txbotj.utils.cmdparser.CommandParser;
+import sodacooky.txbotj.utils.global.GlobalValue;
 import sodacooky.txbotj.utils.managercheck.ManagerChecker;
 
 import javax.annotation.Resource;
@@ -29,6 +33,10 @@ public class GroupWarmer implements IPlugin {
     private ManagerChecker managerChecker;
     @Resource
     private CommandParser commandParser;
+    @Resource
+    private GlobalValue globalValue;
+    @Resource
+    private ObjectMapper objectMapper;
 
     private final Logger logger = LoggerFactory.getLogger(GroupWarmer.class);
 
@@ -130,6 +138,23 @@ public class GroupWarmer implements IPlugin {
         Calendar calendar = Calendar.getInstance();
         int nowHour = calendar.get(Calendar.HOUR);
         if (nowHour >= 2 && nowHour <= 7) return;
+
+        //读取所有暖群句子
+        String sentencesJson = globalValue.readValue("warmer_sentences");
+        //转换为Json数组
+        JsonNode jsonNode = null;
+        try {
+            jsonNode = objectMapper.readTree(sentencesJson);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+        Assert.isTrue(jsonNode.isArray(), "global.warmer_sentences应为Json数组！");
+        //转换为List
+        List<String> sentences = new ArrayList<>();
+        for (JsonNode sentence : jsonNode) {
+            sentences.add(sentence.asText());
+        }
+
         //用于存放启用的群及其上次消息时间
         Map<Long, Long> groupLastRepeatTime = new HashMap<>();
         //读取启用的群
@@ -141,8 +166,10 @@ public class GroupWarmer implements IPlugin {
         for (Map.Entry<Long, Long> pair : groupLastRepeatTime.entrySet()) {
             long delta = nowTimestamp - pair.getValue();
             if (delta >= (1000 * 3600 * 4) - 10000) { //是否超过大概4小时没人说话？
+                //抽取发言内容
+                String warmContent = sentences.get(new Random().nextInt(sentences.size()));
                 //上次发言时间距离现在已经4小时，需要暖
-                messageApi.sendGroupMessage(pair.getKey(), "别让群友寂寞太久！", 0);
+                messageApi.sendGroupMessage(pair.getKey(), warmContent, 0);
                 //自己暖的也算发言时间
                 groupWarmerMapper.updateLastMessageTimestamp(pair.getKey(), nowTimestamp);
                 //日志
