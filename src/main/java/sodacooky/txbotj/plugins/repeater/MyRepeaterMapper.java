@@ -14,7 +14,7 @@ import org.apache.ibatis.annotations.*;
  * );
  */
 @Mapper
-public interface RepeaterMapper {
+public interface MyRepeaterMapper {
 
     /**
      * 看是否有该群的记录，应该获取前先判断一次

@@ -2,13 +2,11 @@ package sodacooky.txbotj.utils.global;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import jakarta.annotation.Resource;
 import org.springframework.stereotype.Component;
-
-import javax.annotation.Resource;
 
 @Component
 public class GlobalValue {
-
     @Resource
     private GlobalValueMapper globalValueMapper;
 

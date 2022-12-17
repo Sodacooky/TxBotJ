@@ -1,6 +1,7 @@
 package sodacooky.txbotj.plugins.exchangerate;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import jakarta.annotation.Resource;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import sodacooky.txbotj.api.MessageApi;
@@ -9,7 +10,6 @@ import sodacooky.txbotj.core.IPlugin;
 import sodacooky.txbotj.utils.cmdparser.CommandParser;
 import sodacooky.txbotj.utils.global.GlobalValue;
 
-import javax.annotation.Resource;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;

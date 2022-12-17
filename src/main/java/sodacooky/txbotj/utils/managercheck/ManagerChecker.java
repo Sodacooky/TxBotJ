@@ -3,11 +3,11 @@ package sodacooky.txbotj.utils.managercheck;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.annotation.Resource;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 import sodacooky.txbotj.utils.global.GlobalValue;
 
-import javax.annotation.Resource;
 import java.util.ArrayList;
 import java.util.List;
 

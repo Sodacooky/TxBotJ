@@ -1,10 +1,10 @@
 package sodacooky.txbotj.api;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import jakarta.annotation.Resource;
 import org.springframework.stereotype.Component;
 import sodacooky.txbotj.core.HttpSender;
 
-import javax.annotation.Resource;
 import java.util.HashMap;
 import java.util.Map;
 

@@ -3,6 +3,7 @@ package sodacooky.txbotj.plugins.groupwarmer;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.annotation.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -14,7 +15,6 @@ import sodacooky.txbotj.utils.cmdparser.CommandParser;
 import sodacooky.txbotj.utils.global.GlobalValue;
 import sodacooky.txbotj.utils.managercheck.ManagerChecker;
 
-import javax.annotation.Resource;
 import java.util.*;
 
 /**
@@ -138,7 +138,6 @@ public class GroupWarmer implements IPlugin {
         Calendar calendar = Calendar.getInstance();
         int nowHour = calendar.get(Calendar.HOUR);
         if (nowHour >= 2 && nowHour <= 7) return;
-
         //读取所有暖群句子
         String sentencesJson = globalValue.readValue("warmer_sentences");
         //转换为Json数组
@@ -154,7 +153,6 @@ public class GroupWarmer implements IPlugin {
         for (JsonNode sentence : jsonNode) {
             sentences.add(sentence.asText());
         }
-
         //用于存放启用的群及其上次消息时间
         Map<Long, Long> groupLastRepeatTime = new HashMap<>();
         //读取启用的群

@@ -1,13 +1,13 @@
 package sodacooky.txbotj.plugins.repeater;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import sodacooky.txbotj.api.MessageApi;
 import sodacooky.txbotj.core.IPlugin;
 import sodacooky.txbotj.utils.badwords.BadWordsChecker;
 
-import javax.annotation.Resource;
 import java.util.Calendar;
 import java.util.Random;
 
@@ -24,7 +24,7 @@ public class Repeater implements IPlugin {
     @Resource
     private MessageApi messageApi;
     @Resource
-    private RepeaterMapper repeaterMapper; //复读机所用数据库操作
+    private MyRepeaterMapper myRepeaterMapper; //复读机所用数据库操作
 
     @Override
     public int getPriority() {
@@ -71,15 +71,15 @@ public class Repeater implements IPlugin {
         long groupId = cqMessageBody.get("group_id").asLong();
 
         //检查数据库
-        if (repeaterMapper.isExist(groupId) == 0) {
+        if (myRepeaterMapper.isExist(groupId) == 0) {
             //不存在，新建
-            repeaterMapper.createNew(groupId);
+            myRepeaterMapper.createNew(groupId);
         }
 
         //在更新数据库前获取上一条消息
-        String previousMessageContent = repeaterMapper.getLastMessageContent(groupId);
+        String previousMessageContent = myRepeaterMapper.getLastMessageContent(groupId);
         //更新数据库，上一条消息
-        repeaterMapper.updateLastMessageContent(groupId, currentMessageContent);
+        myRepeaterMapper.updateLastMessageContent(groupId, currentMessageContent);
 
         //检查
         if (isContentInappropriate(currentMessageContent)) {
@@ -87,7 +87,7 @@ public class Repeater implements IPlugin {
         }
 
         //避免密集复读
-        long lastRepeatTimestamp = repeaterMapper.getLastRepeatTimestamp(groupId);
+        long lastRepeatTimestamp = myRepeaterMapper.getLastRepeatTimestamp(groupId);
         long deltaMs = Calendar.getInstance().getTimeInMillis() - lastRepeatTimestamp;
         if (deltaMs < 1000 * 60 * 30) {
             //30分钟内只复读一次嗷
@@ -105,7 +105,7 @@ public class Repeater implements IPlugin {
         //命中，复读
         messageApi.sendGroupMessage(groupId, currentMessageContent, random.nextInt(3) + 2);
         //更新复读时间
-        repeaterMapper.updateLastRepeatTimestamp(groupId, Calendar.getInstance().getTimeInMillis());
+        myRepeaterMapper.updateLastRepeatTimestamp(groupId, Calendar.getInstance().getTimeInMillis());
         //日志
         log.warn("复读{}群消息: {}", groupId, trimString(currentMessageContent));
         //就算复读了，也可能有别的插件需要工作
