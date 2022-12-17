@@ -3,7 +3,7 @@ package sodacooky.txbotj.core;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.annotation.Resource;
+import lombok.Data;
 import org.springframework.stereotype.Component;
 
 import java.io.ByteArrayOutputStream;
@@ -14,26 +14,24 @@ import java.net.URLConnection;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 /**
  * HTTP请求发送
  * 附带参数拼接便利方法
  */
 @Component
+@Data
 public class HttpSender {
 
-    private ExecutorService executorService;//并发容器
-    @Resource
-    private ObjectMapper objectMapper;//JsonNode转换工具
-    public String hostAddress = "http://127.0.0.1:5700";//cqhttp监听地址，默认为http://127.0.0.1:5700，末尾不要加'/'
+    //内部任务使用的线程池
+    private final ScheduledExecutorService executorService = Executors.newScheduledThreadPool(4);
 
-    //construct
-    public HttpSender() {
-        executorService = Executors.newCachedThreadPool();
-    }
+    //cqhttp监听地址，默认为http://127.0.0.1:5700，末尾不要加'/'
+    private String hostAddress = "http://127.0.0.1:5700";
 
     /**
      * 将url请求放到队列中，每个请求将等待2秒后执行，该方法不阻塞
@@ -42,10 +40,7 @@ public class HttpSender {
      */
     public Future<JsonNode> queueRequest(String requestUrl, int delaySecond) {
         //添加任务
-        return executorService.submit(() -> {
-            Thread.sleep(delaySecond * 1000L);
-            return sendRequest(requestUrl);
-        });
+        return executorService.schedule(() -> sendRequest(requestUrl), delaySecond, TimeUnit.SECONDS);
         //将Future返回给上层，是否要阻塞处理响应由上层决定
     }
 
@@ -64,7 +59,7 @@ public class HttpSender {
     /**
      * 使用Header代替http://xxx部分，将请求方法和参数拼接
      *
-     * @param header     http://xxx的部分，结尾不要有斜杠
+     * @param header     "http://xxx"的部分，结尾不要有斜杠
      * @param method     请求方法，如"send_private_msg"
      * @param parameters 参数
      * @return 拼接后的字符串
@@ -83,15 +78,6 @@ public class HttpSender {
         });
         //最终把三者拼起来
         return header + "/" + method + paramsBuilder.toString();
-    }
-
-    /**
-     * 返回内部的线程池，以供释放或其他操作
-     *
-     * @return ExecutorService
-     */
-    public ExecutorService getInternalThreadPool() {
-        return executorService;
     }
 
     /**
@@ -124,6 +110,7 @@ public class HttpSender {
         }
         //结果为Json字符串，转换为JsonNode
         try {
+            ObjectMapper objectMapper = new ObjectMapper();
             return objectMapper.readTree(result);
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);

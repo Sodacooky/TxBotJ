@@ -5,16 +5,6 @@ import org.apache.ibatis.annotations.*;
 import java.util.List;
 
 
-/**
- * -- auto-generated definition
- * create table group_warmer
- * (
- * group_id               INTEGER not null
- * constraint group_warmer_pk
- * primary key,
- * last_message_timestamp INTEGER default 0 not null
- * );
- */
 @Mapper
 public interface GroupWarmerMapper {
 

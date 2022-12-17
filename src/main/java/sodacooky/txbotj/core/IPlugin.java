@@ -35,6 +35,6 @@ public interface IPlugin {
      * @param cqMessageBody 消息json
      * @return 返回true时继续传递消息给下一个插件，否则当前插件为最后一个处理者
      */
-    public boolean onGroupMessage(JsonNode cqMessageBody) throws Exception;
+    boolean onGroupMessage(JsonNode cqMessageBody) throws Exception;
 
 }

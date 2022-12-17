@@ -17,14 +17,14 @@ import java.util.Random;
  */
 @Slf4j
 @Component
-public class Repeater implements IPlugin {
+public class RepeaterPlugin implements IPlugin {
 
     @Resource
     private BadWordsChecker badWordsChecker; //敏感词判断工具
     @Resource
     private MessageApi messageApi;
     @Resource
-    private MyRepeaterMapper myRepeaterMapper; //复读机所用数据库操作
+    private RepeaterRecordService repeaterRecordService;
 
     @Override
     public int getPriority() {
@@ -44,11 +44,8 @@ public class Repeater implements IPlugin {
      */
     @Override
     public boolean onPrivateMessage(JsonNode cqMessageBody) {
-        //检查
-        if (isContentInappropriate(cqMessageBody.get("message").asText())) {
-            //这种消息也没必要继续处理
-            return false;
-        }
+        //检查，不复读不合适的消息
+        if (isContentInappropriate(cqMessageBody.get("message").asText())) return false;
         //送回
         messageApi.sendBackMessage(cqMessageBody, cqMessageBody.get("message").asText(), new Random().nextInt(2) + 1);
         //日志
@@ -70,44 +67,55 @@ public class Repeater implements IPlugin {
         String currentMessageContent = cqMessageBody.get("message").asText();
         long groupId = cqMessageBody.get("group_id").asLong();
 
-        //检查数据库
-        if (myRepeaterMapper.isExist(groupId) == 0) {
-            //不存在，新建
-            myRepeaterMapper.createNew(groupId);
+        //检查数据库是否有当前群的记录，如果没有要创新新的
+        if (repeaterRecordService.getById(groupId) == null) {
+            repeaterRecordService.save(new RepeaterRecord(groupId, "", 0L, "", 0));
         }
 
-        //在更新数据库前获取上一条消息
-        String previousMessageContent = myRepeaterMapper.getLastMessageContent(groupId);
-        //更新数据库，上一条消息
-        myRepeaterMapper.updateLastMessageContent(groupId, currentMessageContent);
+        //获取当前群的复读相关信息
+        RepeaterRecord matchedRecord = repeaterRecordService.getById(groupId);
+        //暂时数据库上一条消息
+        String previousMessageContent = matchedRecord.getLastMsgOfGroup();
+        //更新未复读消息数量
+        matchedRecord.setPassedMsgAmount(matchedRecord.getPassedMsgAmount() + 1);
 
-        //检查
-        if (isContentInappropriate(currentMessageContent)) {
-            return false;//这种消息也没必要继续复读了
-        }
-
-        //避免密集复读
-        long lastRepeatTimestamp = myRepeaterMapper.getLastRepeatTimestamp(groupId);
-        long deltaMs = Calendar.getInstance().getTimeInMillis() - lastRepeatTimestamp;
-        if (deltaMs < 1000 * 60 * 30) {
-            //30分钟内只复读一次嗷
-            return true;
-        }
-
-        //开始抽签
+        //是否为+1消息的抽签算法并不相同
+        boolean isHitRepeat;
         Random random = new Random();
+        //抽签
         if (previousMessageContent.equals(currentMessageContent)) {
-            if (random.nextInt(4) != 0) return true; //如果是+1，那么1/4概率复读
-            log.warn("下条群复读内容为+1消息");
+            //如果老的消息等于当前消息，为+1消息，对于此消息1/4概率复读
+            isHitRepeat = random.nextInt(4) == 0;
         } else {
-            if (random.nextInt(50) != 0) return true; //否则，2%概率复读
+            //对于一般消息，实行复读控制
+            //复读的概率为 min[未复读消息数量 * 0.5%,50%]
+            double hitPossibility = matchedRecord.getPassedMsgAmount() * 0.005;
+            hitPossibility = Math.min(hitPossibility, 0.5);
+            isHitRepeat = random.nextInt((int) (1 / hitPossibility)) == 0;
         }
-        //命中，复读
-        messageApi.sendGroupMessage(groupId, currentMessageContent, random.nextInt(3) + 2);
-        //更新复读时间
-        myRepeaterMapper.updateLastRepeatTimestamp(groupId, Calendar.getInstance().getTimeInMillis());
-        //日志
-        log.warn("复读{}群消息: {}", groupId, trimString(currentMessageContent));
+        //检查，如果是不合适小消息没必要继续复读了
+        if (isContentInappropriate(currentMessageContent)) isHitRepeat = false;
+        //如果消息过于密集(小于十分钟)，忽略
+        if (Calendar.getInstance().getTimeInMillis() - matchedRecord.getLastRepeatTime() <= 600000) isHitRepeat = false;
+        //如果消息是复读过的，忽略
+        if (currentMessageContent.equals(matchedRecord.getLastRepeatMsg())) isHitRepeat = false;
+
+
+        //如果命中了，需要将未复读消息数量清零，
+        if (isHitRepeat) {
+            //命中了，清零
+            matchedRecord.setPassedMsgAmount(0);
+            //记录复读的内容
+            matchedRecord.setLastRepeatMsg(currentMessageContent);
+            matchedRecord.setLastMsgOfGroup(currentMessageContent);
+            //发送消息
+            messageApi.sendGroupMessage(groupId, currentMessageContent, random.nextInt(3) + 2);
+            //日志
+            log.warn("复读{}群消息: {}", groupId, trimString(currentMessageContent));
+        }
+        //无论是否复读都要更新
+        repeaterRecordService.update(matchedRecord, null);
+
         //就算复读了，也可能有别的插件需要工作
         return true;
     }
