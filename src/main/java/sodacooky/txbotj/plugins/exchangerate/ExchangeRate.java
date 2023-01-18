@@ -7,9 +7,9 @@ import org.springframework.stereotype.Component;
 import sodacooky.txbotj.api.MessageApi;
 import sodacooky.txbotj.core.HttpSender;
 import sodacooky.txbotj.core.IPlugin;
-import sodacooky.txbotj.utils.cmdparser.CommandParser;
 import sodacooky.txbotj.utils.global.GlobalValue;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -28,10 +28,6 @@ public class ExchangeRate implements IPlugin {
     //需要记录API访问次数以限制，以及获取apikey
     @Resource
     private GlobalValue globalValue;
-
-    //有点画蛇添足？
-    @Resource
-    private CommandParser commandParser;
 
     @Resource
     private MessageApi messageApi;
@@ -77,9 +73,9 @@ public class ExchangeRate implements IPlugin {
         }
 
         //尝试将指令拆分为块
-        List<String> blocks = commandParser.parse(content);
+        List<String> blocks = Arrays.asList(content.split(" "));
         //是否为指令
-        if (null == blocks) return true;
+        if (blocks.size() < 2 || !blocks.get(0).startsWith(">>")) return true;
         //是否当前插件
         if (!blocks.get(0).endsWith("ExchangeRate")) return true;
         //参数数量是否正确
